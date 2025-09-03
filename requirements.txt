@@ -1,0 +1,13 @@
+pandas
+matplotlib
+seaborn
+scikit-learn
+xgboost
+langchain
+langchain-ollama
+ollama
+tqdm
+joblib
+streamlit
+faiss-cpu
+sentence-transformers
