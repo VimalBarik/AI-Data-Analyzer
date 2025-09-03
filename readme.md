@@ -4,19 +4,19 @@ A powerful, AI-driven data analysis tool that combines automated exploratory dat
 
 ## Features
 
-### 🤖 AI-Powered Analysis
+###  AI-Powered Analysis
 - **Natural Language Interface**: Ask questions about your data in plain English
 - **Automated EDA**: Comprehensive exploratory data analysis with insights and visualizations
 - **Code Generation**: AI generates Python code for complex analysis tasks
 - **Safe Code Execution**: Built-in security measures prevent dangerous operations
 
-### 📊 Data Processing & Visualization
+###  Data Processing & Visualization
 - **Multiple Format Support**: CSV, Excel (.xlsx, .xls), Parquet, and Feather files
 - **Interactive Visualizations**: Correlation heatmaps, distributions, scatter plots, and more
 - **Statistical Analysis**: Descriptive statistics, correlation analysis, and outlier detection
 - **Missing Value Handling**: Intelligent imputation and data cleaning suggestions
 
-### 🔍 Advanced Features
+###  Advanced Features
 - **RAG (Retrieval-Augmented Generation)**: Context-aware responses using FAISS indexing
 - **Auto-EDA Mode**: Fully autonomous data exploration with up to 5 automated steps
 - **Real-time Code Execution**: Execute generated Python code with immediate results
