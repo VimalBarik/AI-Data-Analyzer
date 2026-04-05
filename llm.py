@@ -25,7 +25,6 @@ class LLMAnalyzer:
                 return f"[ERROR] LLM call failed: {e}"
 
     def _generate_summary(self, df: pd.DataFrame) -> str:
-        """Generates a detailed text summary of the DataFrame."""
         summary = {
             "columns": df.columns.tolist(),
             "head": df.head().to_dict(orient="records"),
@@ -34,21 +33,6 @@ class LLMAnalyzer:
         return json.dumps(summary, indent=2)
 
     def get_analysis_and_suggestion(self, df: pd.DataFrame) -> dict:
-        """
-        Uses the LLM to perform EDA and suggest a modeling task.
-
-        Returns:
-            A dictionary with analysis and a modeling suggestion.
-            Example:
-            {
-                "analysis": "The dataset contains...",
-                "suggestion": {
-                    "task": "classification",
-                    "target": "species",
-                    "justification": "The 'species' column is categorical..."
-                }
-            }
-        """
         summary = self._generate_summary(df)
         prompt = PromptTemplate(
             input_variables=["summary"],
@@ -70,16 +54,12 @@ class LLMAnalyzer:
             return {"error": str(response)}
 
     def run_suggested_model(self, df: pd.DataFrame, suggestion: dict) -> dict:
-        """
-        Runs the suggested ML model and returns the evaluation results.
-        """
         task = suggestion['task'].lower()
         target = suggestion['target']
 
         if target not in df.columns:
             return {"error": f"Target column '{target}' not found in DataFrame."}
-        
-        # Check for high cardinality in classification
+
         if task == 'classification':
             n_unique = df[target].nunique()
             if n_unique > 20:
@@ -88,7 +68,6 @@ class LLMAnalyzer:
             return {"error": f"Unsupported task: '{task}'"}
 
         try:
-            # For now, return a message suggesting to use the chat interface
             return {"message": "Please use the chat interface to run ML models. The LLM will generate the appropriate code for your specific request."}
         except Exception as e:
             return {"error": f"An error occurred during model training: {e}"}
@@ -140,9 +119,6 @@ class LLMAnalyzer:
         return {"message": response}
 
     def execute_plan(self, df: pd.DataFrame, plan: dict):
-        """
-        Legacy method - no longer used since we're using pure LLM code generation.
-        """
         return {"message": "This feature has been replaced with LLM code generation. Please use the chat interface."}
 
     def explain_code_output(self, user_question, code_output, error=None, result_vars=None, plot_present=False):
@@ -222,13 +198,11 @@ class LLMAnalyzer:
             "previous_code": previous_code,
             "error_message": error_message
         })
-        # Extract the new code block
         match = re.search(r"```python\s*([\s\S]+?)\s*```", response)
         if match:
             return match.group(1)
-        return response  # fallback: return the whole response
+        return response
 
-# Add a utility function to check for forbidden code patterns
 FORBIDDEN_PATTERNS = [
     'pd.read_csv', 'pd.read_excel', 'pd.read_parquet', 'pd.read_feather',
     'open(', 'with open', 'os.remove', 'os.rename', 'os.system', 'subprocess',

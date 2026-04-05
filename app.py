@@ -10,22 +10,15 @@ import logging
 from rag import build_faiss_index, retrieve_relevant_chunks
 
 def extract_code_block(text):
-    """
-    Extracts the first code block from the text (delimited by triple backticks).
-    Returns a tuple: (code, explanation)
-    If no code block is found, returns (None, text).
-    """
     code_block_pattern = r"```(?:python)?\s*([\s\S]+?)```"
     match = re.search(code_block_pattern, text)
     if match:
         code = match.group(1).strip()
-        # Remove the code block from the text to get the explanation
         explanation = re.sub(code_block_pattern, '', text, count=1).strip()
         return code, explanation
     else:
         return None, text
 
-# Inject custom CSS for black background, white pixel font, and minimal UI
 def set_black_white_pixel_theme():
     st.markdown(
         """
@@ -77,7 +70,6 @@ def set_black_white_pixel_theme():
             color: #000 !important;
             font-family: 'VT323', 'Press Start 2P', 'monospace', monospace !important;
         }
-        /* Hide Streamlit hamburger and footer */
         #MainMenu, footer {visibility: hidden;}
         </style>
         <link href="https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&display=swap" rel="stylesheet">
@@ -87,19 +79,15 @@ def set_black_white_pixel_theme():
 
 set_black_white_pixel_theme()
 
-# Remove all emojis and color from UI text
 def bw(text):
     return re.sub(r'[^\x00-\x7F]+', '', text)
 
-# Title and description
 st.set_page_config(page_title="AI Data Analyzer", layout="wide")
 st.title(bw("AI Data Analyzer"))
 st.markdown(bw("Upload a dataset and chat with your AI data assistant. Powered by Mistral (Ollama)."))
 
-# File uploader
 uploaded_file = st.file_uploader("Upload a CSV, Excel, Parquet, or Feather file", type=["csv", "xlsx", "xls", "parquet", "feather"])
 
-# Add a code filter before executing any code block
 FORBIDDEN_PATTERNS = [
     'pd.read_csv', 'pd.read_excel', 'pd.read_parquet', 'pd.read_feather',
     'open(', 'with open', 'os.remove', 'os.rename', 'os.system', 'subprocess',
@@ -118,7 +106,6 @@ if uploaded_file:
     df = processor.df
     eda_summary = processor.get_llm_summary()
 
-    # --- RAG: Build FAISS index for the uploaded data ---
     if 'rag_index' not in st.session_state or st.session_state.get('rag_file') != uploaded_file.name:
         with st.spinner(bw("Indexing your data for retrieval-augmented analysis...")):
             rag_index, rag_chunks, rag_embedder = build_faiss_index(df)
@@ -138,7 +125,6 @@ if uploaded_file:
     if 'chat_history' not in st.session_state:
         st.session_state.chat_history = []
     if 'eda_done' not in st.session_state or st.session_state.get('eda_file') != uploaded_file.name:
-        # Only run EDA if not done for this file
         df_head = df.head().to_string()
         dtypes = df.dtypes.to_string()
         shape = df.shape
@@ -182,17 +168,14 @@ if uploaded_file:
         st.error(bw(initial_eda_error))
     st.markdown(bw(eda_response_str))
 
-    # Add sidebar toggle for Auto-EDA mode
     auto_eda_mode = st.sidebar.checkbox('Auto-EDA Mode', value=False)
 
-    # --- Auto-EDA Mode ---
     if auto_eda_mode:
         st.header(bw("Auto-EDA: Autonomous Data Exploration"))
         if st.button("Run Auto-EDA", key="run_auto_eda"):
             st.session_state.auto_eda_steps = []
             st.session_state.auto_eda_stop = False
             auto_eda_steps = []
-            # Start with a system prompt for autonomous EDA
             prompt = (
                 "You are an autonomous data scientist. Explore the DataFrame 'df' step by step. "
                 "At each step, generate Python code to learn something new about the data (e.g., summary stats, missing values, distributions, correlations, etc.). "
@@ -228,7 +211,6 @@ if uploaded_file:
                         st.session_state.chat_history.append(("result", f"Error: {error}"))
                     if plot_present:
                         st.session_state.chat_history.append(("result", {"figures": exec_result["figures"]}))
-                    # Ask LLM to explain the result and what to do next
                     with st.spinner(bw("Assistant is explaining the result...")):
                         explanation = st.session_state.llm.explain_code_output(
                             user_message, code_output, error, result_vars, plot_present
@@ -236,7 +218,6 @@ if uploaded_file:
                     st.session_state.chat_history.append(("assistant", explanation))
                     chat_history.append(f"assistant: {explanation}")
                     user_message = "What is your next step?"
-                    # Check for stop condition
                     if "EDA complete" in explanation:
                         break
                 else:
@@ -244,7 +225,6 @@ if uploaded_file:
                     break
         st.write(bw("Auto-EDA will run up to 5 steps or until the LLM says 'EDA complete.' You can switch back to manual mode at any time."))
 
-    # --- Chat UI (manual mode) ---
     if not auto_eda_mode:
         st.header(bw("Chat with your Data Assistant"))
         for role, msg in st.session_state.chat_history:
@@ -253,7 +233,6 @@ if uploaded_file:
             elif role == "assistant":
                 st.markdown(bw(f"**Assistant:**\n{msg}"))
             elif role == "result":
-                msg = msg  # msg can be dict from code_executor or legacy
                 if isinstance(msg, dict):
                     if "figures" in msg:
                         for fig in msg["figures"]:
@@ -267,13 +246,10 @@ if uploaded_file:
             user_input = st.text_input(bw("Type your question or choose an action (e.g., 'predict price'):"), key="chat_input")
             submitted = st.form_submit_button(bw("Send"))
         if submitted and user_input.strip():
-            # --- RAG: Retrieve relevant context for the user query ---
             rag_context = retrieve_relevant_chunks(user_input, rag_index, rag_chunks, rag_embedder, top_k=3)
             rag_context_str = "\n".join(rag_context)
             st.session_state.chat_history.append(("user", user_input))
-            # Do NOT append RAG context to chat history
 
-            # Try to answer simple data questions directly from the DataFrame
             direct_answer = None
             explanation = None
             if re.search(r"year.*most.*accident", user_input, re.IGNORECASE):
@@ -300,7 +276,6 @@ if uploaded_file:
                     st.session_state.chat_history.append(("assistant", bw(explanation)))
             else:
                 with st.spinner(bw("Assistant is thinking...")):
-                    # Pass RAG context as hidden context (prepend to system prompt if no dedicated arg)
                     system_prompt = st.session_state.eda_summary
                     if rag_context_str:
                         system_prompt = f"Relevant data context for this file (if needed):\n{rag_context_str}\n---\n" + system_prompt
@@ -311,30 +286,25 @@ if uploaded_file:
                     )
                 code, chat_response_str = extract_code_block(chat_result["message"])
                 if code:
-                    # 1. Show the code block to the user
                     st.session_state.chat_history.append(("assistant", f"```python\n{code}\n```"))
                     if not code_is_safe(code):
                         st.session_state.chat_history.append(("assistant", bw("Sorry, this code is not allowed. Please try a different file or check your data format.")))
                     else:
-                        # 2. Run the code
                         exec_result = execute_python_code(code, df)
                         code_output = exec_result.get("stdout", "")
                         error = exec_result.get("error")
                         result_vars = exec_result.get("result_vars")
                         plot_present = bool(exec_result.get("figures"))
-                        # 3. Show output/errors/plots
                         if code_output:
                             st.session_state.chat_history.append(("result", code_output))
                         if error:
                             st.session_state.chat_history.append(("result", f"Error: {error}"))
                         if plot_present:
                             st.session_state.chat_history.append(("result", {"figures": exec_result["figures"]}))
-                        # 4. Ask LLM to explain the result
                         with st.spinner(bw("Assistant is explaining the result...")):
                             explanation = st.session_state.llm.explain_code_output(
                                 user_input, code_output, error, result_vars, plot_present
                             )
-                        # 5. Show the explanation
                         st.session_state.chat_history.append(("assistant", explanation))
                 else:
                     st.session_state.chat_history.append(("assistant", bw(chat_result["message"])))

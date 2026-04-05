@@ -31,7 +31,6 @@ class DataProcessor:
         print(self.df.isnull().sum())
 
     def clean_data(self):
-        # Placeholder: Add custom cleaning rules later
         self.df.drop_duplicates(inplace=True)
         return self.df
 
@@ -101,7 +100,6 @@ class DataProcessor:
         summary['columns'] = [{'name': col, 'dtype': str(dtype)} for col, dtype in self.df.dtypes.items()]
         summary['missing_values'] = self.df.isnull().sum()[lambda x: x > 0].sort_values(ascending=False).to_dict()
 
-        # Robust describe (handle pandas version differences)
         try:
             describe = self.df.describe(include='all', datetime_is_numeric=True).transpose().fillna("").to_dict()
         except TypeError:

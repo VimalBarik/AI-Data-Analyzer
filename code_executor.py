@@ -13,17 +13,11 @@ def code_is_safe(code):
     return not any(pattern in code for pattern in FORBIDDEN_PATTERNS)
 
 def execute_python_code(code: str, df, extra_globals=None):
-    """
-    Executes a Python code block with access to 'df' and common data science libraries.
-    The LLM should include all necessary imports in the generated code.
-    Returns a dict with 'stdout', 'error', 'figures', and optionally 'result_vars'.
-    """
     local_vars = {'df': df}
     if extra_globals:
         local_vars.update(extra_globals)
     stdout = io.StringIO()
     result = {}
-    # Clear previous matplotlib figures
     plt.close('all')
     try:
         if not code_is_safe(code):
@@ -34,7 +28,6 @@ def execute_python_code(code: str, df, extra_globals=None):
         result['stdout'] = stdout.getvalue()
         result['error'] = None
         result['figures'] = figs
-        # Optionally, return variables (e.g., if code sets 'result')
         if 'result' in local_vars:
             result['result_vars'] = local_vars['result']
     except Exception as e:

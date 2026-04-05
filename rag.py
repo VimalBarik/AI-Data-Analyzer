@@ -3,10 +3,8 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 import faiss
 
-# Use a free, small embedding model
 EMBED_MODEL_NAME = 'all-MiniLM-L6-v2'
 
-# Chunk DataFrame by row (as string)
 def chunk_dataframe(df: pd.DataFrame):
     chunks = []
     for idx, row in df.iterrows():
@@ -14,7 +12,6 @@ def chunk_dataframe(df: pd.DataFrame):
         chunks.append(chunk)
     return chunks
 
-# Build FAISS index from DataFrame
 def build_faiss_index(df: pd.DataFrame):
     embedder = SentenceTransformer(EMBED_MODEL_NAME)
     chunks = chunk_dataframe(df)
@@ -24,8 +21,7 @@ def build_faiss_index(df: pd.DataFrame):
     index.add(np.array(embeddings).astype('float32'))
     return index, chunks, embedder
 
-# Retrieve top_k relevant chunks for a query
 def retrieve_relevant_chunks(query, index, chunks, embedder, top_k=3):
     query_emb = embedder.encode([query])
     D, I = index.search(np.array(query_emb).astype('float32'), top_k)
-    return [chunks[i] for i in I[0]] 
+    return [chunks[i] for i in I[0]]
